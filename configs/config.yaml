@@ -1,0 +1,15 @@
+apptags:
+  department: promodeagro
+  product: ecom
+  environment: dev
+  service: api
+git:
+  repo: https://github.com/promodeagro/promodeagro-ecommerce-api-cicd.git
+  tag:  main
+general:
+  organization: promodeagro
+  rebuild-stack: false
+  domain: promodeagro.com
+  subdomain: api
+  hostedzoneid: Z00062013820EO6BYULDB
+
