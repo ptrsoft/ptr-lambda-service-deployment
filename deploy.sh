@@ -17,6 +17,12 @@ if ! command -v yq &> /dev/null; then
     exit 1
 fi
 
+# Ensure the git is installed
+if ! command -v git &> /dev/null; then
+    echo "git command not found. Please install it to proceed."
+    exit 1
+fi
+
 # Check for required arguments
 if [ $# -le 1 ]; then
     echo "Usage:./deploy.sh [-c config.yaml] --it takes all info from config file"
