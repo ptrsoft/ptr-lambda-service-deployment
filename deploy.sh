@@ -23,6 +23,13 @@ if ! command -v git &> /dev/null; then
     exit 1
 fi
 
+# Ensure the npm is installed
+if ! command -v npm &> /dev/null; then
+    echo "git command not found. Please install it to proceed."
+    exit 1
+fi
+
+
 # Check for required arguments
 if [ $# -le 1 ]; then
     echo "Usage:./deploy.sh [-c config.yaml] --it takes all info from config file"
@@ -110,6 +117,10 @@ deployService() {
     echo "Starting to deploy the services"
     awsprofile=$(eval getAwsProfile "$organization")
     echo "Obtained awsprofile $awsprofile"   
+    export AWS_CONFIG_FILE=/tekton/home/.aws/config
+    export AWS_SHARED_CREDENTIALS_FILE=/tekton/home/.aws/credentials
+    export AWS_PROFILE=promode
+    aws s3 ls
     deployCmd='serverless deploy --param=''"'department=$2'"'' --param=''"'product=$3'"'' --param=''"'service=$4'"'' --aws-profile '$awsprofile''
     pushd checkout && serverless plugin install -n serverless-offline && $deployCmd && pushd +1   
 }
