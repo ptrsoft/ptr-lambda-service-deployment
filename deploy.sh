@@ -119,8 +119,7 @@ deployService() {
     echo "Obtained awsprofile $awsprofile"   
     export AWS_CONFIG_FILE=/tekton/home/.aws/config
     export AWS_SHARED_CREDENTIALS_FILE=/tekton/home/.aws/credentials
-    export AWS_PROFILE=promode
-    aws s3 ls
+    export AWS_PROFILE=$awsprofile
     deployCmd='serverless deploy --param=''"'department=$2'"'' --param=''"'product=$3'"'' --param=''"'service=$4'"'' --aws-profile '$awsprofile''
     pushd checkout && serverless plugin install -n serverless-offline && $deployCmd && pushd +1   
 }
@@ -181,8 +180,35 @@ delete-stack() {
 
 # Function to check the stack status
 check_stack_status() {
-    aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query 'Stacks[0].StackStatus' --output text 2>/dev/null
+    aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query 'Stacks[0].StackStatus' --output text 
 }
+
+# Function that check delete status and wait upto creation
+keep-waiting-until-stack-created(){
+    # Polling interval in seconds
+    INTERVAL=30
+    echo "Waiting for CloudFormation stack '$1' to be created..."
+    # Initial status check
+    STATUS=$(check_stack_status)
+
+    echo "Checking status for stack: $1"
+    echo "Current status: $STATUS"
+
+    # Loop until the stack reaches a completion status
+    while [[ "$STATUS" != "CREATE_COMPLETE" && "$STATUS" != "UPDATE_COMPLETE" && "$STATUS" != "ROLLBACK_COMPLETE" && "$STATUS" != "UPDATE_ROLLBACK_COMPLETE" && "$STATUS" != "CREATE_FAILED" && "$STATUS" != "DELETE_COMPLETE" ]]; do
+        echo "Stack is in $STATUS status. Waiting for $INTERVAL seconds..."
+        sleep $INTERVAL
+        STATUS=$(check_stack_status)
+    done
+    echo "Final stack status: $STATUS"
+    # Check if stack creation or update was successful
+    if [[ "$STATUS" == "CREATE_COMPLETE" || "$STATUS" == "UPDATE_COMPLETE" ]]; then
+        echo "Stack operation was successful."
+    else
+        echo "Stack operation failed or was rolled back."
+    fi
+}
+
 # Function that check delete status and wait upto deletion
 keep-waiting-until-stack-deleted(){
     echo "Waiting for CloudFormation stack '$1' to be deleted..."
@@ -235,5 +261,8 @@ if rebuild-stack;then
     delete-existing-stack "$STACK_NAME"
 fi
 deployService "$repo" "$AppkubeDepartment" "$AppkubeProduct" "$AppkubeService" 
+keep-waiting-until-stack-created "$STACK_NAME"
 clean-checkout-folder
 updatecmdb "$STACK_NAME"
+
+
